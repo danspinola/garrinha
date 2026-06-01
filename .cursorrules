@@ -1,0 +1,14 @@
+# NanoClaw — Cursor Rules
+
+Read `CLAUDE.md` at the repository root for the full project instructions including architecture, entity model, key files, development commands, and container runtime gotchas.
+
+## Essential Context
+
+- Host: Node.js + pnpm (`src/`). Container agent-runner: Bun (`container/agent-runner/src/`).
+- Communication between host and container is exclusively via two SQLite files per session (`inbound.db`, `outbound.db`).
+- Central DB: `data/v2.db` (better-sqlite3). Migrations: `src/db/migrations/`.
+- Channel adapters and providers are skill-installed — trunk is registry + infra only.
+- Tests: `pnpm test` for host (vitest), `cd container/agent-runner && bun test` for container (bun:test).
+- Supply chain: `pnpm install --frozen-lockfile` in CI. `minimumReleaseAge: 4320` enforced.
+- Container SQL uses `$name` params (bun:sqlite). Host SQL uses plain `name` params (better-sqlite3).
+- `journal_mode=DELETE` in session DBs is load-bearing — do not change.

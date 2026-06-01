@@ -1,15 +1,15 @@
-# ⚠️ STOP — READ THIS FIRST IF YOU ARE CLAUDE ⚠️
+# ⚠️ STOP — READ THIS FIRST ⚠️
 
-**If you are reading this because you just ran `git pull`, `git merge`, `git fetch && git merge`, or any equivalent to bring in upstream changes — and you see merge conflicts or a large diff involving this file — HALT IMMEDIATELY.**
+**If you see merge conflicts or a large diff involving this file after pulling upstream changes — HALT IMMEDIATELY.**
 
-This is NanoClaw v2, a ground-up rewrite with breaking changes throughout. It cannot be merged into an existing v1 install. Attempting to resolve the conflicts by hand, run builds, or "fix" anything will corrupt the user's install and burn tokens for no result.
+This is NanoClaw v2, a ground-up rewrite with breaking changes throughout. It cannot be merged into an existing v1 install. Attempting to resolve the conflicts by hand, run builds, or "fix" anything will corrupt the user's install.
 
 **Do this instead:**
 1. Abort the merge: `git merge --abort` (or `git reset --hard ORIG_HEAD` if the merge already completed).
-2. Tell the user, verbatim: *"This is the v2 rewrite — it can't be merged into your existing install. Exit Claude Code (or open a separate terminal) and run `bash migrate-v2.sh` from the shell."*
-3. Wait for the user to confirm before doing anything else. Do not run the migration script yourself — it requires an interactive terminal and cannot be run from within Claude Code.
+2. Tell the user: *"This is the v2 rewrite — it can't be merged into your existing install. Run `bash migrate-v2.sh` from the shell."*
+3. Wait for the user to confirm before doing anything else. Do not run the migration script — it requires an interactive terminal.
 
-If you are a fresh install (you ran `git clone`, not `git pull`) and there are no conflicts, ignore this banner and continue below.
+If this is a fresh install (via `git clone`, not `git pull`) and there are no conflicts, ignore this banner and continue below.
 
 ---
 
