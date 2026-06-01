@@ -5,13 +5,14 @@ import { execSync } from 'child_process';
 import fs from 'fs';
 import os from 'os';
 
-export type Platform = 'macos' | 'linux' | 'unknown';
+export type Platform = 'macos' | 'linux' | 'windows' | 'unknown';
 export type ServiceManager = 'launchd' | 'systemd' | 'none';
 
 export function getPlatform(): Platform {
   const platform = os.platform();
   if (platform === 'darwin') return 'macos';
   if (platform === 'linux') return 'linux';
+  if (platform === 'win32') return 'windows';
   return 'unknown';
 }
 
@@ -60,6 +61,10 @@ export function openBrowser(url: string): boolean {
       execSync(`open ${JSON.stringify(url)}`, { stdio: 'ignore' });
       return true;
     }
+    if (platform === 'windows') {
+      execSync(`start "" ${JSON.stringify(url)}`, { stdio: 'ignore', shell: true });
+      return true;
+    }
     if (platform === 'linux') {
       // Try xdg-open first, then wslview for WSL
       if (commandExists('xdg-open')) {
@@ -100,6 +105,9 @@ export function getServiceManager(): ServiceManager {
 
 export function getNodePath(): string {
   try {
+    if (os.platform() === 'win32') {
+      return execSync('powershell.exe -NoProfile -Command "(Get-Command node).Source"', { encoding: 'utf-8' }).trim();
+    }
     return execSync('command -v node', { encoding: 'utf-8' }).trim();
   } catch {
     return process.execPath;
@@ -108,7 +116,11 @@ export function getNodePath(): string {
 
 export function commandExists(name: string): boolean {
   try {
-    execSync(`command -v ${name}`, { stdio: 'ignore' });
+    if (os.platform() === 'win32') {
+      execSync(`powershell.exe -NoProfile -Command "Get-Command ${name} -ErrorAction Stop"`, { stdio: 'ignore' });
+    } else {
+      execSync(`command -v ${name}`, { stdio: 'ignore' });
+    }
     return true;
   } catch {
     return false;

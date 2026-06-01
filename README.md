@@ -25,10 +25,18 @@ NanoClaw provides that same core functionality, but in a codebase small enough t
 
 ## Quick Start
 
+**macOS / Linux:**
 ```bash
 git clone https://github.com/nanocoai/nanoclaw.git nanoclaw-v2
 cd nanoclaw-v2
 bash nanoclaw.sh
+```
+
+**Windows (PowerShell):**
+```powershell
+git clone https://github.com/nanocoai/nanoclaw.git nanoclaw-v2
+cd nanoclaw-v2
+.\nanoclaw.ps1
 ```
 
 `nanoclaw.sh` walks you from a fresh machine to a named agent you can message. It installs Node, pnpm, and Docker if missing, registers your Anthropic credential with OneCLI, builds the agent container, and pairs your first channel (Telegram, Discord, WhatsApp, or a local CLI). If a step fails, Claude Code is invoked automatically to diagnose and resume from where it broke.
@@ -129,7 +137,7 @@ Skills we'd like to see:
 
 ## Requirements
 
-- macOS or Linux (Windows via WSL2)
+- macOS, Linux, or Windows (native PowerShell or WSL2)
 - Node.js 20+ and pnpm 10+ (the installer will install both if missing)
 - [Docker Desktop](https://docker.com/products/docker-desktop) (macOS/Windows) or Docker Engine (Linux)
 - [Claude Code](https://claude.ai/download) for `/customize`, `/debug`, error recovery during setup, and all `/add-<channel>` skills
@@ -167,7 +175,7 @@ Docker provides cross-platform support (macOS, Linux and Windows via WSL2) and a
 
 **Can I run this on Linux or Windows?**
 
-Yes. Docker is the default runtime and works on macOS, Linux, and Windows (via WSL2). Just run `bash nanoclaw.sh`.
+Yes. Docker is the default runtime and works on macOS, Linux, and Windows. On macOS/Linux run `bash nanoclaw.sh`. On Windows run `.\nanoclaw.ps1` from PowerShell.
 
 **Is this secure?**
 

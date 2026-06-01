@@ -38,4 +38,8 @@ groups/*
 # Skills system (local per-installation state)
 .nanoclaw/
 
+# Work in progress plans
+.wip/
+.temp/
+
 agents-sdk-docs

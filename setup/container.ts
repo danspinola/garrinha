@@ -39,6 +39,8 @@ async function tryStartDocker(): Promise<DockerStatus> {
   try {
     if (platform === 'macos') {
       execSync('open -a Docker', { stdio: 'ignore' });
+    } else if (platform === 'windows') {
+      execSync('start "" "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe"', { stdio: 'ignore', shell: true });
     } else if (platform === 'linux') {
       // Inherit stdio so sudo can prompt for a password if needed.
       execSync('sudo systemctl start docker', { stdio: 'inherit' });
@@ -99,11 +101,15 @@ export async function run(args: string[]): Promise<void> {
   }
 
   if (!commandExists('docker')) {
-    log.info('Docker not found — running setup/install-docker.sh');
+    log.info('Docker not found — running install script');
     try {
-      execSync('bash setup/install-docker.sh', { cwd: projectRoot, stdio: 'inherit' });
+      if (getPlatform() === 'windows') {
+        execSync('powershell.exe -NoProfile -ExecutionPolicy Bypass -File setup/install-docker-win.ps1', { cwd: projectRoot, stdio: 'inherit' });
+      } else {
+        execSync('bash setup/install-docker.sh', { cwd: projectRoot, stdio: 'inherit' });
+      }
     } catch (err) {
-      log.warn('install-docker.sh failed', { err });
+      log.warn('install-docker script failed', { err });
     }
   }
 

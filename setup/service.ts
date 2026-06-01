@@ -71,6 +71,8 @@ export async function run(_args: string[]): Promise<void> {
     setupLaunchd(projectRoot, nodePath, homeDir);
   } else if (platform === 'linux') {
     setupLinux(projectRoot, nodePath, homeDir);
+  } else if (platform === 'windows') {
+    setupWindows(projectRoot, nodePath);
   } else {
     emitStatus('SETUP_SERVICE', {
       SERVICE_TYPE: 'unknown',
@@ -86,11 +88,97 @@ export async function run(_args: string[]): Promise<void> {
   installCliSymlink(projectRoot, homeDir);
 }
 
+function setupWindows(projectRoot: string, nodePath: string): void {
+  const startScript = path.join(projectRoot, 'start-nanoclaw.ps1');
+  const stopScript = path.join(projectRoot, 'stop-nanoclaw.ps1');
+  const pidFile = path.join(projectRoot, 'nanoclaw.pid');
+  const logsDir = path.join(projectRoot, 'logs');
+
+  const startContent = `# start-nanoclaw.ps1 — Start NanoClaw on Windows
+$ErrorActionPreference = 'Stop'
+Set-Location ${JSON.stringify(projectRoot)}
+
+# Stop existing instance
+if (Test-Path ${JSON.stringify(pidFile)}) {
+    $oldPid = Get-Content ${JSON.stringify(pidFile)} -ErrorAction SilentlyContinue
+    if ($oldPid) {
+        $proc = Get-Process -Id $oldPid -ErrorAction SilentlyContinue
+        if ($proc) {
+            Write-Host "Stopping existing NanoClaw (PID $oldPid)..."
+            Stop-Process -Id $oldPid -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds 2
+        }
+    }
+}
+
+Write-Host 'Starting NanoClaw...'
+$proc = Start-Process -FilePath ${JSON.stringify(nodePath)} -ArgumentList ${JSON.stringify(projectRoot + '/dist/index.js')} -WorkingDirectory ${JSON.stringify(projectRoot)} -WindowStyle Hidden -RedirectStandardOutput ${JSON.stringify(logsDir + '/nanoclaw.log')} -RedirectStandardError ${JSON.stringify(logsDir + '/nanoclaw.error.log')} -PassThru
+$proc.Id | Out-File -FilePath ${JSON.stringify(pidFile)} -Encoding ascii
+Write-Host "NanoClaw started (PID $($proc.Id))"
+Write-Host "Logs: Get-Content ${logsDir}\\nanoclaw.log -Wait"
+`;
+
+  const stopContent = `# stop-nanoclaw.ps1 — Stop NanoClaw on Windows
+$ErrorActionPreference = 'SilentlyContinue'
+$pidFile = ${JSON.stringify(pidFile)}
+if (Test-Path $pidFile) {
+    $pid = Get-Content $pidFile
+    if ($pid) {
+        Stop-Process -Id $pid -Force
+        Remove-Item $pidFile -Force
+        Write-Host "NanoClaw stopped."
+    }
+} else {
+    Write-Host 'NanoClaw is not running (no PID file found).'
+}
+`;
+
+  fs.writeFileSync(startScript, startContent);
+  fs.writeFileSync(stopScript, stopContent);
+  log.info('Wrote Windows start/stop scripts', { startScript, stopScript });
+
+  // Register as a Windows Task Scheduler entry for auto-start on login
+  try {
+    const taskName = 'NanoClaw';
+    execSync(
+      `schtasks /Create /F /SC ONLOGON /TN "${taskName}" /TR "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ${startScript}" /RL HIGHEST`,
+      { stdio: 'pipe' },
+    );
+    log.info('Registered Windows scheduled task for auto-start', { taskName });
+  } catch (err) {
+    log.warn('Could not register scheduled task (non-fatal)', { err });
+  }
+
+  // Start now
+  try {
+    execSync(`powershell.exe -NoProfile -ExecutionPolicy Bypass -File ${JSON.stringify(startScript)}`, {
+      stdio: 'pipe',
+      cwd: projectRoot,
+    });
+  } catch (err) {
+    log.warn('Could not start NanoClaw immediately (non-fatal)', { err });
+  }
+
+  emitStatus('SETUP_SERVICE', {
+    SERVICE_TYPE: 'windows-task',
+    NODE_PATH: nodePath,
+    PROJECT_PATH: projectRoot,
+    START_SCRIPT: startScript,
+    STOP_SCRIPT: stopScript,
+    SERVICE_LOADED: true,
+    STATUS: 'success',
+    LOG: 'logs/setup.log',
+  });
+}
+
 /**
  * Symlink bin/ncl into ~/.local/bin so `ncl` is available from anywhere.
  * Idempotent — overwrites an existing symlink but won't clobber a real file.
+ * On Windows, this is skipped (symlinks require elevated privileges).
  */
 function installCliSymlink(projectRoot: string, homeDir: string): void {
+  if (os.platform() === 'win32') return;
+
   const source = path.join(projectRoot, 'bin', 'ncl');
   const targetDir = path.join(homeDir, '.local', 'bin');
   const target = path.join(targetDir, 'ncl');
